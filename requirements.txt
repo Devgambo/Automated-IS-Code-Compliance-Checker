@@ -1,0 +1,39 @@
+# --- Core utilities ---
+numpy
+requests
+python-dotenv
+
+# --- Jupyter / Notebook ---
+jupyter>=1.0.0
+jupyterlab>=4.0.0
+ipython>=8.0.0
+
+# --- PDF handling (already present) ---
+PyPDF2>=3.0.0
+pdfplumber>=0.9.0
+convertapi
+
+# --- LangChain & text splitting ---
+langchain>=0.2.0
+langchain-community>=0.2.0
+langchain-huggingface>=0.0.3
+langchain-text-splitters>=0.0.1
+
+# --- Vector DB ---
+chromadb>=0.5.0
+
+# --- Embeddings ---
+sentence-transformers>=2.2.2   # required for HuggingFace embeddings
+torch>=2.1.0                  # needed for sentence-transformers
+
+# --- LLM Providers ---
+groq>=0.5.0                   # Groq client SDK for LLaMA-3
+tiktoken>=0.7.0               # tokenizer (used in text splitters)
+
+# --- (Optional but useful) ---
+pandas>=2.0.0                 # for inspection/debugging
+
+
+openai
+PyMuPDF
+Pillow

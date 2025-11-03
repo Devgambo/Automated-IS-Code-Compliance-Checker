@@ -1,0 +1,77 @@
+# Environment & secrets
+.env
+.env.*
+.envrc
+.python-version
+
+# Python cache/bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.coverage
+coverage.xml
+
+# Build/distribution
+build/
+dist/
+*.egg-info/
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Editors/IDE
+.vscode/
+.idea/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Docker/compose artifacts
+docker-data/
+
+# Project data/output (root-level)
+chroma_db/
+RESULT/
+img-data-extr/
+sample_pdfs/
+uploads/
+reports/
+convertedimages/
+final-validated-data/
+first_extract/
+
+# Project data/output (under WO-380/)
+WO-380/chroma_db/
+WO-380/RESULT/
+WO-380/img-data-extr/
+WO-380/sample_pdfs/
+WO-380/uploads/
+WO-380/reports/
+WO-380/convertedimages/
+WO-380/final-validated-data/
+WO-380/first_extract/
+
+# Large/binary artifacts
+*.sqlite3
+*.bin
+*.pdf
+*.jpg
+*.png
+
+# Node (if present)
+node_modules/
+
