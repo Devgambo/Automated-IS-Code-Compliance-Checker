@@ -55,7 +55,6 @@ def analyse_image(image_path, prompt):
     }
 
     try:
-        print(f"Making API call to: {url}")
         response = requests.post(url, headers=headers, data=json.dumps(data))
         print(f"Response status: {response.status_code}")
         
