@@ -37,3 +37,6 @@ pandas>=2.0.0                 # for inspection/debugging
 openai
 PyMuPDF
 Pillow
+streamlit>=1.28.0
+markdown>=3.4.0
+weasyprint>=59.0
