@@ -173,14 +173,14 @@ if st.session_state.initial_report:
     st.markdown("---")
     st.markdown(st.session_state.initial_report)
     
-    # # Also show Missing or Wrong Information section separately
-    # st.header("📋 Step 3: Missing or Wrong Information")
-    # st.markdown("Review the items that need attention:")
+    # Also show Missing or Wrong Information section separately
+    st.header("📋 Step 3: Missing or Wrong Information")
+    st.markdown("Review the items that need attention:")
     
-    # missing_info = extract_missing_info_section(st.session_state.initial_report)
-    # st.markdown(missing_info)
+    missing_info = extract_missing_info_section(st.session_state.initial_report)
+    st.markdown(missing_info)
     
-    # Section 4: User Input
+    Section 4: User Input
     st.header("✏️ Step 4: Provide Additional Information")
     st.markdown("Please provide any missing information or corrections:")
     
