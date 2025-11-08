@@ -20,28 +20,28 @@ os.makedirs(FIRST_EXTRACT_DIR, exist_ok=True)
 vectordb = VectorStore(collection_name="is_codes_docs", folder_path="./chroma_db")
 
 
-# def extract_missing_info_section(report_text: str) -> str:
-#     """
-#     Extracts the "## Missing or Wrong Information" section from the report.
-#     Returns the section if found, otherwise returns a message.
-#     """
-#     # Pattern to find the section (handles variations in formatting)
-#     patterns = [
-#         r'##\s*Missing or Wrong Information.*?(?=##\s|\*\*|📚|📌|## UPDATED|## ✅|## 📄|\Z)',
-#         r'##\s*Missing.*?Wrong.*?Information.*?(?=##|\Z)',
-#         r'\*\*Missing or Wrong Information\*\*.*?(?=##|\Z)',
-#         r'Missing or Wrong Information.*?(?=##|\Z)',
-#     ]
+def extract_missing_info_section(report_text: str) -> str:
+    """
+    Extracts the "## Missing or Wrong Information" section from the report.
+    Returns the section if found, otherwise returns a message.
+    """
+    # Pattern to find the section (handles variations in formatting)
+    patterns = [
+        r'##\s*Missing or Wrong Information.*?(?=##\s|\*\*|📚|📌|## UPDATED|## ✅|## 📄|\Z)',
+        r'##\s*Missing.*?Wrong.*?Information.*?(?=##|\Z)',
+        r'\*\*Missing or Wrong Information\*\*.*?(?=##|\Z)',
+        r'Missing or Wrong Information.*?(?=##|\Z)',
+    ]
     
-#     for pattern in patterns:
-#         match = re.search(pattern, report_text, re.DOTALL | re.IGNORECASE)
-#         if match:
-#             section = match.group(0).strip()
-#             # Remove any trailing section headers that might have been captured
-#             section = re.sub(r'\n##\s+[A-Z].*$', '', section, flags=re.DOTALL)
-#             return section
+    for pattern in patterns:
+        match = re.search(pattern, report_text, re.DOTALL | re.IGNORECASE)
+        if match:
+            section = match.group(0).strip()
+            # Remove any trailing section headers that might have been captured
+            section = re.sub(r'\n##\s+[A-Z].*$', '', section, flags=re.DOTALL)
+            return section
     
-#     return "## Missing or Wrong Information\n\n*Section not found in the report. Please check the full report below.*"
+    return "## Missing or Wrong Information\n\n*Section not found in the report. Please check the full report below.*"
 
 
 def markdown_to_pdf(markdown_text: str, output_path: str):
@@ -180,7 +180,7 @@ if st.session_state.initial_report:
     missing_info = extract_missing_info_section(st.session_state.initial_report)
     st.markdown(missing_info)
     
-    Section 4: User Input
+    # Section 4: User Input
     st.header("✏️ Step 4: Provide Additional Information")
     st.markdown("Please provide any missing information or corrections:")
     

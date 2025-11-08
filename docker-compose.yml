@@ -16,6 +16,7 @@ services:
       - "8888:8888"
       # Map container port 8502 to host port 8502 (for Streamlit)
       - "8501:8501"
+      - "8502:8502"
     environment:
       - PYTHONPATH=/app
     stdin_open: true  # Keep STDIN open
