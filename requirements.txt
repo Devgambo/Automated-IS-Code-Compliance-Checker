@@ -27,7 +27,8 @@ sentence-transformers>=2.2.2   # required for HuggingFace embeddings
 torch>=2.1.0                  # needed for sentence-transformers
 
 # --- LLM Providers ---
-groq>=0.5.0                   # Groq client SDK for LLaMA-3
+# Using OpenRouter (via OpenAI SDK) instead of Groq
+# groq>=0.5.0                   # Removed: Now using OpenRouter
 tiktoken>=0.7.0               # tokenizer (used in text splitters)
 
 # --- (Optional but useful) ---

@@ -1,47 +1,118 @@
-from typing import List, Dict
-from groq import Groq
+from typing import List, Dict, Optional
+from openai import OpenAI
 import os
+from dotenv import load_dotenv
 
-client = Groq(api_key=os.getenv('GROQ_API_KEY'))
-GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
+# Load environment variables
+load_dotenv()
+
+# Initialize OpenRouter client
+OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY')
+if not OPENROUTER_API_KEY:
+    raise ValueError("OPENROUTER_API_KEY not found in environment variables. Please set it in your .env file.")
+
+client = OpenAI(
+    base_url="https://openrouter.ai/api/v1",
+    api_key=OPENROUTER_API_KEY,
+)
+
+# Model selection for final report generation:
+    # 
+    # TOP TIER (Best Quality - Recommended for Production):
+    # - "anthropic/claude-3.5-sonnet" - Best overall: Excellent reasoning, citations, structured output
+    # - "openai/gpt-4o" - Excellent: Great reasoning, fast, good structured output
+    # - "anthropic/claude-3-opus" - Excellent: Best reasoning, slower but highest quality
+    # - "openai/gpt-4-turbo" - Very Good: Balanced performance and cost
+    # 
+    # MID TIER (Good Quality - Cost-Effective):
+    # - "google/gemini-pro-1.5" - Very Good: Strong technical understanding, good citations
+    # - "anthropic/claude-3-sonnet" - Very Good: Good balance of quality and speed
+    # - "meta-llama/llama-3.1-70b-instruct" - Good: Open-source, decent technical analysis
+    # - "google/gemini-2.0-flash-exp" - Good: Fast, decent quality for structured reports
+    # 
+    # BUDGET TIER (Fast & Affordable - Good for Testing):
+    # - "openai/gpt-4o-mini" - Fast: Good for simple reports, very affordable (RECOMMENDED DEFAULT)
+    # - "google/gemini-2.0-flash-exp" - Fast: Quick responses, lower cost, acceptable quality
+    # - "meta-llama/llama-3.1-8b-instruct" - Fast: Lightweight, basic technical analysis
+    # 
+    # Set via environment variable: OPENROUTER_MODEL
+    # Default: gpt-4o-mini (reliable, affordable, widely available)
+OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "openai/gpt-4o-mini")
 
 def generate_compliance_report(
     Initial_report: str,
     vectordb,
     embedding_model,
-    previous_analysis,
-    user_input,
+    previous_analysis: str,
+    user_input: str,
     k: int = 5
 ) -> str:
     """
     Generate a compliance report by comparing validated drawing data 
-    with IS codes (via RAG) using Groq + LLaMA-3.
-    """
-    # Resolve content if a file path is provided, otherwise treat as raw markdown
-    if os.path.isfile(Initial_report):
-        with open(Initial_report, encoding="utf-8") as f:
-            Initial_report = f.read()
-    else:
-        Initial_report = Initial_report
-
-    # --- 1. Embed image data and query vector DB ---
-    query_embedding = embedding_model.embed_query(Initial_report)
-    retrieved = vectordb.query([query_embedding], n_results=k)
-
-    context_texts = "\n\n".join(
-        [f"[Source: {r['metadata'].get('source_file', 'N/A')}, "
-         f"Clause: {r['metadata'].get('chunk_id', 'N/A')}]\n{r['document']}"
-         for r in retrieved]
-    )
+    with IS codes (via RAG) using OpenRouter.
     
-    # --- 2. Prompt ---
-    system_prompt = """
-You are a Indian Senior Civil engineer. Your task is to refine a previous analysis of an RCC structural drawing based on new information provided by the user. Output a combined report of both the initial report and user input and also the context extracted from the IS codes and generate a final report of structural drawing data.Always cite the specific IS clause from the provided context.
-Output a structured compliance report. You will be given the PREVIOUS ANALYSIS and the USER'S NEW INPUT.
-"""
+    This function:
+    1. Retrieves relevant IS code context using RAG
+    2. Combines initial report, user input, and IS code context
+    3. Generates a comprehensive final compliance report
+    
+    Args:
+        Initial_report: Path to initial report file or raw markdown content
+        vectordb: Vector database instance for RAG retrieval
+        embedding_model: Embedding model for query encoding
+        previous_analysis: The previous analysis report content
+        user_input: Additional information provided by the user
+        k: Number of relevant chunks to retrieve from vector DB (default: 5)
+    
+    Returns:
+        str: Generated compliance report in markdown format
+    
+    Raises:
+        ValueError: If required parameters are missing
+        Exception: If API call fails
+    """
+    try:
+        # Resolve content if a file path is provided, otherwise treat as raw markdown
+        if os.path.isfile(Initial_report):
+            with open(Initial_report, encoding="utf-8") as f:
+                Initial_report = f.read()
+        
+        if not Initial_report or not previous_analysis:
+            raise ValueError("Initial_report and previous_analysis cannot be empty")
+        
+        # --- 1. Embed query and retrieve relevant IS code context ---
+        print("Embedding query and retrieving relevant IS code context...")
+        query_embedding = embedding_model.embed_query(Initial_report)
+        retrieved = vectordb.query([query_embedding], n_results=k)
 
-    user_prompt = f"""
-**PREVIOUS ANALYSIS:**
+        if not retrieved or len(retrieved) == 0:
+            print("Warning: No relevant context retrieved from vector database.")
+            context_texts = "No relevant IS code context found in the database."
+        else:
+            context_texts = "\n\n".join(
+                [f"[Source: {r['metadata'].get('source_file', 'N/A')}, "
+                 f"Clause: {r['metadata'].get('chunk_id', 'N/A')}]\n{r['document']}"
+                 for r in retrieved]
+            )
+        
+        # --- 2. Construct prompts ---
+        system_prompt = """You are an Indian Senior Civil Engineer with extensive expertise in RCC structural design and code compliance. Your task is to refine a previous analysis of an RCC structural drawing based on new information provided by the user.
+            Key Responsibilities:
+            - Integrate user input with the previous analysis to create a comprehensive final report
+            - Cross-reference all findings with IS 456:2000 and SP 34 provisions
+            - Always cite specific IS clause numbers from the provided context
+            - Generate a structured, professional compliance report in Markdown format
+            - Clearly distinguish between compliant and non-compliant items
+            - Update the "Missing or Wrong Information" section based on the integrated analysis
+
+            Output Requirements:
+            - Use clear, professional engineering language
+            - Structure the report with proper Markdown formatting
+            - Include specific clause references for all compliance checks
+            - Provide actionable recommendations where non-compliance is identified
+            - Be thorough but concise"""
+
+        user_prompt = f"""**PREVIOUS ANALYSIS:**
 ---
 {previous_analysis}
 ---
@@ -51,39 +122,95 @@ Output a structured compliance report. You will be given the PREVIOUS ANALYSIS a
 {user_input}
 ---
 
-**IS Code Context (Retrieved)**
+**IS Code Context (Retrieved from Vector Database):**
 {context_texts}
 
+---
 
 **Your Tasks:**
-1.  **Integrate New Information:** Carefully review the USER'S NEW INPUT and use it to fill in the gaps and correct the information in the PREVIOUS ANALYSIS.
-2.  **Re-run Compliance Checks:** With the new information, re-evaluate the compliance of each checklist item against The extracted IS Code contexts.
-2.  **Re-run Compliance Checks:** With the new information, re-evaluate the compliance of each checklist item against IS 456:2000 and SP 34.
-3.  **Produce an Updated Report:** Generate a single, complete, and updated report in the same Markdown checklist format as the original.
-4.  **Update Missing Information List:** The final "**Missing or Wrong Information**" section should only contain items that are *still* missing or non-compliant after incorporating the user's input. If all issues are resolved, state this clearly.
 
-Do not ask for more information. Provide the updated report based only on the context provided.
+1. **Integrate New Information:** 
+   - Carefully review the USER'S NEW INPUT
+   - Use it to fill gaps and correct information in the PREVIOUS ANALYSIS
+   - Merge both sources into a unified understanding
 
-### Initial Preliminary Report with additioal user input
+2. **Re-run Compliance Checks:** 
+   - With the integrated information, re-evaluate each checklist item
+   - Compare against the extracted IS Code contexts (IS 456:2000 and SP 34)
+   - Verify compliance with specific clause requirements
+   - Cite the exact clause numbers from the provided context
+
+3. **Produce an Updated Report:** 
+   - Generate a single, complete, and updated report
+   - Maintain the same Markdown checklist format as the original
+   - Ensure all sections are properly updated with new information
+   - Include a clear summary of changes made
+
+4. **Update Missing Information List:** 
+   - The final "**Missing or Wrong Information**" section should only contain items that are *still* missing or non-compliant after incorporating the user's input
+   - If all issues are resolved, state this clearly: "All previously identified issues have been resolved based on the provided information."
+   - If new issues are discovered, list them clearly
+
+5. **Quality Assurance:**
+   - Ensure all technical terms and values are accurate
+   - Verify that all IS code references are correctly cited
+   - Check that the report is internally consistent
+
+**Important:** Do not ask for more information. Provide the updated report based only on the context provided. If information is still missing after integration, clearly state it in the "Missing or Wrong Information" section.
+
+### Initial Preliminary Report with Additional User Input:
 {Initial_report}
 
+---
 
+Please generate the final compliance report now."""
 
-"""
+        # --- 3. Call OpenRouter API ---
+        print(f"Calling OpenRouter API with model: {OPENROUTER_MODEL}...")
+        try:
+            response = client.chat.completions.create(
+                model=OPENROUTER_MODEL,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ],
+                temperature=0.1,  # Low temperature for consistent, factual output
+                max_tokens=8000,  # Sufficient for detailed reports
+            )
+        except Exception as api_error:
+            error_str = str(api_error)
+            # Check if it's a model not found error
+            if "404" in error_str or "No endpoints found" in error_str or "NotFoundError" in str(type(api_error).__name__):
+                raise ValueError(
+                    f"Model '{OPENROUTER_MODEL}' is not available on OpenRouter. "
+                    f"Please check the model name or use a different model. "
+                    f"Valid options include: 'openai/gpt-4o-mini', 'anthropic/claude-3.5-sonnet', "
+                    f"'openai/gpt-4o', 'google/gemini-pro-1.5'. "
+                    f"Set OPENROUTER_MODEL environment variable to change the model."
+                ) from api_error
+            else:
+                raise
 
-    # --- 3. Call Groq ---
-    response = client.chat.completions.create(
-        model=GROQ_MODEL,
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
-        ],
-        temperature=0.0  # deterministic
-    )
+        if not response or not response.choices or len(response.choices) == 0:
+            raise Exception("Empty response received from OpenRouter API")
 
-    print("response generated.")
+        generated_report = response.choices[0].message.content
+        
+        if not generated_report:
+            raise Exception("Generated report is empty")
 
-    return response.choices[0].message.content
+        print("✅ Final compliance report generated successfully.")
+        return generated_report
+
+    except ValueError as e:
+        print(f"❌ Validation error: {e}")
+        raise
+    except FileNotFoundError as e:
+        print(f"❌ File not found: {e}")
+        raise
+    except Exception as e:
+        print(f"❌ Error generating compliance report: {e}")
+        raise Exception(f"Failed to generate compliance report: {str(e)}")
 
 
 

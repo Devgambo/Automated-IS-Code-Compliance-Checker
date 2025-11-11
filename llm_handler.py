@@ -81,7 +81,7 @@ def analyze_rcc_drawing(pdf_path, prompt_text):
             model="google/gemini-2.5-flash",
             # model="openai/gpt-4o-mini",
             messages=messages,
-            max_tokens=12000, # Set a higher limit for detailed reports
+            max_tokens=8000, # Set a higher limit for detailed reports
         )
         print("Received response from OpenRouter.")
         

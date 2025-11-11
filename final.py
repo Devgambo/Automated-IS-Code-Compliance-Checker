@@ -12,9 +12,11 @@ from llm_service import generate_compliance_report
 REPORTS_DIR = "reports"
 UPLOADS_DIR = "uploads"
 FIRST_EXTRACT_DIR = "first_extract"
+RESULT_DIR = "RESULT"
 os.makedirs(REPORTS_DIR, exist_ok=True)
 os.makedirs(UPLOADS_DIR, exist_ok=True)
 os.makedirs(FIRST_EXTRACT_DIR, exist_ok=True)
+os.makedirs(RESULT_DIR, exist_ok=True)
 
 # Initialize vector DB (assuming it's already populated)
 vectordb = VectorStore(collection_name="is_codes_docs", folder_path="./chroma_db")
@@ -171,14 +173,15 @@ if uploaded_file is not None:
 if st.session_state.initial_report:
     st.header("📋 Step 2: Initial Compliance Report")
     st.markdown("---")
+    print(st.session_state.initial_report)
     st.markdown(st.session_state.initial_report)
     
-    # Also show Missing or Wrong Information section separately
-    st.header("📋 Step 3: Missing or Wrong Information")
-    st.markdown("Review the items that need attention:")
+    # # Also show Missing or Wrong Information section separately
+    # st.header("📋 Step 3: Missing or Wrong Information")
+    # st.markdown("Review the items that need attention:")
     
-    missing_info = extract_missing_info_section(st.session_state.initial_report)
-    st.markdown(missing_info)
+    # missing_info = extract_missing_info_section(st.session_state.initial_report)
+    # st.markdown(missing_info)
     
     # Section 4: User Input
     st.header("✏️ Step 4: Provide Additional Information")
@@ -213,14 +216,14 @@ if st.session_state.initial_report:
                     
                     st.session_state.final_report = final_report
                     
-                    # Save final report
+                    # Save final report to RESULT folder
                     timestamp = int(time.time())
                     final_filename = f"final_report_{os.path.basename(uploaded_file.name)}_{timestamp}.md"
-                    final_filepath = os.path.join(REPORTS_DIR, final_filename)
+                    final_filepath = os.path.join(RESULT_DIR, final_filename)
                     with open(final_filepath, 'w', encoding='utf-8') as f:
                         f.write(final_report)
                     
-                    st.success("✅ Final report generated successfully!")
+                    st.success(f"✅ Final report generated and saved to {final_filepath}!")
                     st.balloons()
                 except Exception as e:
                     st.error(f"❌ Error generating final report: {e}")
