@@ -37,7 +37,8 @@ client = OpenAI(
     # 
     # Set via environment variable: OPENROUTER_MODEL
     # Default: gpt-4o-mini (reliable, affordable, widely available)
-OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "openai/gpt-4o-mini")
+# OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "openai/gpt-4o-mini")
+OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "google/gemini-2.5-flash")
 
 def generate_compliance_report(
     Initial_report: str,

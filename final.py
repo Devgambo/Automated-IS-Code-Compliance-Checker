@@ -21,39 +21,16 @@ os.makedirs(RESULT_DIR, exist_ok=True)
 # Initialize vector DB (assuming it's already populated)
 vectordb = VectorStore(collection_name="is_codes_docs", folder_path="./chroma_db")
 
-
-def extract_missing_info_section(report_text: str) -> str:
-    """
-    Extracts the "## Missing or Wrong Information" section from the report.
-    Returns the section if found, otherwise returns a message.
-    """
-    # Pattern to find the section (handles variations in formatting)
-    patterns = [
-        r'##\s*Missing or Wrong Information.*?(?=##\s|\*\*|📚|📌|## UPDATED|## ✅|## 📄|\Z)',
-        r'##\s*Missing.*?Wrong.*?Information.*?(?=##|\Z)',
-        r'\*\*Missing or Wrong Information\*\*.*?(?=##|\Z)',
-        r'Missing or Wrong Information.*?(?=##|\Z)',
-    ]
-    
-    for pattern in patterns:
-        match = re.search(pattern, report_text, re.DOTALL | re.IGNORECASE)
-        if match:
-            section = match.group(0).strip()
-            # Remove any trailing section headers that might have been captured
-            section = re.sub(r'\n##\s+[A-Z].*$', '', section, flags=re.DOTALL)
-            return section
-    
-    return "## Missing or Wrong Information\n\n*Section not found in the report. Please check the full report below.*"
-
-
 def markdown_to_pdf(markdown_text: str, output_path: str):
     """
     Converts markdown text to PDF using markdown + weasyprint.
-    Falls back to saving as .md if PDF conversion fails.
+    Falls back to reportlab if weasyprint fails (better Windows support).
+    Returns (success: bool, error_message: str or None)
     """
+    # Try WeasyPrint first
     try:
         import markdown
-        from weasyprint import HTML, CSS
+        from weasyprint import HTML
         from weasyprint.text.fonts import FontConfiguration
         
         # Convert markdown to HTML
@@ -100,28 +77,87 @@ def markdown_to_pdf(markdown_text: str, output_path: str):
         # Generate PDF
         font_config = FontConfiguration()
         HTML(string=full_html).write_pdf(output_path, font_config=font_config)
-        return True
+        return True, None
     except ImportError:
-        # If weasyprint is not available, save as markdown
-        with open(output_path.replace('.pdf', '.md'), 'w', encoding='utf-8') as f:
-            f.write(markdown_text)
-        return False
+        # WeasyPrint not installed, try reportlab
+        pass
     except Exception as e:
-        st.error(f"Error converting to PDF: {e}")
-        # Fallback: save as markdown
-        with open(output_path.replace('.pdf', '.md'), 'w', encoding='utf-8') as f:
-            f.write(markdown_text)
-        return False
+        # WeasyPrint installed but failed (e.g., GTK libraries missing on Windows)
+        error_msg = str(e)
+        if 'libgobject' in error_msg.lower() or 'gtk' in error_msg.lower() or 'cannot load library' in error_msg.lower():
+            # Try fallback with reportlab (better Windows support)
+            pass
+        else:
+            # Other WeasyPrint errors - try reportlab anyway
+            pass
+    
+    # Try fallback with reportlab (better Windows support)
+    try:
+        from reportlab.lib.pagesizes import letter
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.units import inch
+        import html
+        
+        # Convert markdown to HTML-like format for reportlab
+        text = markdown_text
+        # Simple markdown to HTML conversion for reportlab
+        text = re.sub(r'^#+\s+(.+)$', r'<b>\1</b>', text, flags=re.MULTILINE)
+        text = re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', text)
+        text = re.sub(r'\*(.+?)\*', r'<i>\1</i>', text)
+        text = re.sub(r'`(.+?)`', r'<font name="Courier">\1</font>', text)
+        
+        # Create PDF
+        doc = SimpleDocTemplate(output_path, pagesize=letter)
+        styles = getSampleStyleSheet()
+        story = []
+        
+        # Custom style for better formatting
+        custom_style = ParagraphStyle(
+            'Custom',
+            parent=styles['Normal'],
+            fontSize=11,
+            leading=14,
+            spaceAfter=12,
+        )
+        
+        # Split text into paragraphs and add to PDF
+        for line in text.split('\n'):
+            if line.strip():
+                # Escape HTML special characters but preserve our formatting tags
+                # First, temporarily replace our tags
+                line = line.replace('<b>', '___BOLD_START___').replace('</b>', '___BOLD_END___')
+                line = line.replace('<i>', '___ITALIC_START___').replace('</i>', '___ITALIC_END___')
+                line = line.replace('<font name="Courier">', '___CODE_START___').replace('</font>', '___CODE_END___')
+                # Escape HTML
+                line = html.escape(line)
+                # Restore our tags
+                line = line.replace('___BOLD_START___', '<b>').replace('___BOLD_END___', '</b>')
+                line = line.replace('___ITALIC_START___', '<i>').replace('___ITALIC_END___', '</i>')
+                line = line.replace('___CODE_START___', '<font name="Courier">').replace('___CODE_END___', '</font>')
+                story.append(Paragraph(line, custom_style))
+            else:
+                story.append(Spacer(1, 0.2*inch))
+        
+        doc.build(story)
+        return True, None
+    except ImportError:
+        return False, "PDF conversion requires either 'weasyprint' or 'reportlab'. Install with: `pip install weasyprint` or `pip install reportlab`"
+    except Exception as e:
+        return False, f"PDF conversion failed with reportlab: {str(e)}"
+    
+    # If we get here, both methods failed
+    return False, "PDF conversion requires either 'weasyprint' (with GTK+ libraries) or 'reportlab'. For Windows, install reportlab: `pip install reportlab`"
 
 
 # Streamlit UI
 st.set_page_config(
-    page_title="RCC Drawing Compliance Checker",
-    page_icon="🏗️",
+    page_title="Foundation compliance check using AI",
+    page_icon="🧑‍🔬",
     layout="wide"
 )
 
-st.title("🏗️ RCC Drawing Compliance Checker")
+st.title("🧑‍🔬 Foundation compliance check using AI")
 st.markdown("Analyze RCC structural drawings for compliance with IS 456:2000 and SP 34")
 
 # Initialize session state
@@ -165,7 +201,6 @@ if uploaded_file is not None:
                     f.write(initial_report)
                 
                 st.success("✅ Initial report generated successfully!")
-                st.balloons()
             except Exception as e:
                 st.error(f"❌ Error during analysis: {e}")
 
@@ -175,16 +210,42 @@ if st.session_state.initial_report:
     st.markdown("---")
     print(st.session_state.initial_report)
     st.markdown(st.session_state.initial_report)
+    st.markdown("---")
+    init_col1, init_col2 = st.columns(2)
+
+    with init_col1:
+        initial_md_filename = f"initial_compliance_report_{int(time.time())}.md"
+        st.download_button(
+            label="📥 Download Initial Report as Markdown",
+            data=st.session_state.initial_report,
+            file_name=initial_md_filename,
+            mime="text/markdown"
+        )
+
+    with init_col2:
+        initial_pdf_filename = f"initial_compliance_report_{int(time.time())}.pdf"
+        initial_pdf_path = os.path.join(REPORTS_DIR, initial_pdf_filename)
+
+        try:
+            pdf_success, error_msg = markdown_to_pdf(st.session_state.initial_report, initial_pdf_path)
+            if pdf_success and os.path.exists(initial_pdf_path):
+                with open(initial_pdf_path, "rb") as pdf_file:
+                    st.download_button(
+                        label="📄 Download Initial Report as PDF",
+                        data=pdf_file.read(),
+                        file_name=initial_pdf_filename,
+                        mime="application/pdf"
+                    )
+            else:
+                if error_msg:
+                    st.info(f"💡 {error_msg}")
+                else:
+                    st.info("💡 PDF conversion requires 'weasyprint' or 'reportlab'. Install with: `pip install weasyprint` or `pip install reportlab`")
+        except Exception as e:
+            st.info(f"💡 PDF conversion not available. Error: {e}")
     
-    # # Also show Missing or Wrong Information section separately
-    # st.header("📋 Step 3: Missing or Wrong Information")
-    # st.markdown("Review the items that need attention:")
-    
-    # missing_info = extract_missing_info_section(st.session_state.initial_report)
-    # st.markdown(missing_info)
-    
-    # Section 4: User Input
-    st.header("✏️ Step 4: Provide Additional Information")
+    # Section 3: User Input
+    st.header("✏️ Step 3: Provide Additional Information")
     st.markdown("Please provide any missing information or corrections:")
     
     user_provided_info = st.text_area(
@@ -194,7 +255,7 @@ if st.session_state.initial_report:
         help="Enter any additional information that addresses the missing or wrong information items"
     )
     
-    # Section 5: Generate Final Report
+    # Section 4: Generate Final Report
     if st.button("🚀 Generate Final Report", type="primary"):
         if not user_provided_info.strip():
             st.warning("⚠️ Please provide additional information before generating the final report.")
@@ -224,13 +285,12 @@ if st.session_state.initial_report:
                         f.write(final_report)
                     
                     st.success(f"✅ Final report generated and saved to {final_filepath}!")
-                    st.balloons()
                 except Exception as e:
                     st.error(f"❌ Error generating final report: {e}")
 
 # Display Final Report
 if st.session_state.final_report:
-    st.header("📊 Step 5: Final Compliance Report")
+    st.header("📊 Step 4: Final Compliance Report")
     st.markdown("---")
     
     # Display the report
@@ -243,7 +303,7 @@ if st.session_state.final_report:
     with col1:
         # Download as Markdown
         st.download_button(
-            label="📥 Download Report as Markdown",
+            label="📥 Download Final Report as Markdown",
             data=st.session_state.final_report,
             file_name=f"compliance_report_{int(time.time())}.md",
             mime="text/markdown"
@@ -257,17 +317,20 @@ if st.session_state.final_report:
         
         # Try to convert to PDF
         try:
-            pdf_success = markdown_to_pdf(st.session_state.final_report, pdf_path)
+            pdf_success, error_msg = markdown_to_pdf(st.session_state.final_report, pdf_path)
             if pdf_success and os.path.exists(pdf_path):
                 with open(pdf_path, "rb") as pdf_file:
                     st.download_button(
-                        label="📄 Download Report as PDF",
+                        label="📄 Download Final Report as PDF",
                         data=pdf_file.read(),
                         file_name=pdf_filename,
                         mime="application/pdf"
                     )
             else:
-                st.info("💡 PDF conversion requires 'weasyprint'. Install it with: `pip install weasyprint`")
+                if error_msg:
+                    st.info(f"💡 {error_msg}")
+                else:
+                    st.info("💡 PDF conversion requires 'weasyprint' or 'reportlab'. Install with: `pip install weasyprint` or `pip install reportlab`")
         except Exception as e:
             st.info(f"💡 PDF conversion not available. Error: {e}")
 

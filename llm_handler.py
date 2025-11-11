@@ -79,7 +79,6 @@ def analyze_rcc_drawing(pdf_path, prompt_text):
         print("Sending request to OpenRouter...")
         response = client.chat.completions.create(
             model="google/gemini-2.5-flash",
-            # model="openai/gpt-4o-mini",
             messages=messages,
             max_tokens=8000, # Set a higher limit for detailed reports
         )
