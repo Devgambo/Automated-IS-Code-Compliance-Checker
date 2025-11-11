@@ -2,19 +2,22 @@ import os
 import time
 import streamlit as st
 import re
-from llm_handler import analyze_rcc_drawing
+from llm_handler import analyze_rcc_drawing, analyze_rcc_drawing_from_images
 from prompt import INITIAL_EXTRACTION_PROMPT, REFINEMENT_PROMPT_TEMPLATE
 from embedding_service import embedding_model
 from vector_db import VectorStore
 from llm_service import generate_compliance_report
+from PIL import Image
 
 # --- Configuration ---
 REPORTS_DIR = "reports"
 UPLOADS_DIR = "uploads"
+IMAGES_DIR = "uploads"  # Store images in the same uploads directory
 FIRST_EXTRACT_DIR = "first_extract"
 RESULT_DIR = "RESULT"
 os.makedirs(REPORTS_DIR, exist_ok=True)
 os.makedirs(UPLOADS_DIR, exist_ok=True)
+os.makedirs(IMAGES_DIR, exist_ok=True)
 os.makedirs(FIRST_EXTRACT_DIR, exist_ok=True)
 os.makedirs(RESULT_DIR, exist_ok=True)
 
@@ -361,42 +364,130 @@ if 'final_report' not in st.session_state:
     st.session_state.final_report = None
 if 'pdf_filename' not in st.session_state:
     st.session_state.pdf_filename = None
+if 'uploaded_images' not in st.session_state:
+    st.session_state.uploaded_images = None
+if 'image_names' not in st.session_state:
+    st.session_state.image_names = None
+if 'file_type' not in st.session_state:
+    st.session_state.file_type = None  # 'pdf' or 'image'
 
-# Section 1: PDF Upload and Initial Report Generation
-st.header("📄 Step 1: Upload PDF and Generate Initial Report")
+# Section 1: File Upload and Initial Report Generation
+st.header("📄 Step 1: Upload PDF or Image and Generate Initial Report")
 
-uploaded_file = st.file_uploader(
-    "Upload a PDF file",
-    type=['pdf'],
-    help="Upload an RCC structural drawing PDF for analysis"
-)
+# Create tabs for PDF and Image upload
+upload_tab1, upload_tab2 = st.tabs(["📄 Upload PDF", "🖼️ Upload Image"])
 
-if uploaded_file is not None:
-    # Save uploaded file
-    pdf_path = os.path.join(UPLOADS_DIR, uploaded_file.name)
-    with open(pdf_path, "wb") as f:
-        f.write(uploaded_file.getbuffer())
-    
-    st.session_state.pdf_filename = uploaded_file.name
-    st.success(f"✅ File uploaded: {uploaded_file.name}")
+with upload_tab1:
+    uploaded_file = st.file_uploader(
+        "Upload a PDF file",
+        type=['pdf'],
+        help="Upload an RCC structural drawing PDF for analysis",
+        key="pdf_uploader"
+    )
 
-    # Generate initial report button
-    if st.button("🔍 Generate Initial Report", type="primary"):
-        with st.spinner("Analyzing PDF and generating initial compliance report..."):
+    if uploaded_file is not None:
+        # Save uploaded file
+        pdf_path = os.path.join(UPLOADS_DIR, uploaded_file.name)
+        with open(pdf_path, "wb") as f:
+            f.write(uploaded_file.getbuffer())
+        
+        st.session_state.pdf_filename = uploaded_file.name
+        st.session_state.file_type = 'pdf'
+        st.session_state.uploaded_images = None  # Clear image state
+        st.session_state.image_names = None  # Clear image names
+        st.success(f"✅ PDF uploaded: {uploaded_file.name}")
+
+        # Generate initial report button
+        if st.button("🔍 Generate Initial Report", type="primary", key="generate_pdf_report"):
+            with st.spinner("Analyzing PDF and generating initial compliance report..."):
+                try:
+                    initial_report = analyze_rcc_drawing(pdf_path, INITIAL_EXTRACTION_PROMPT)
+                    st.session_state.initial_report = initial_report
+                    
+                    # Save the initial report
+                    timestamp = int(time.time())
+                    initial_filename = f"initial_report_{os.path.basename(uploaded_file.name)}_{timestamp}.md"
+                    initial_filepath = os.path.join(FIRST_EXTRACT_DIR, initial_filename)
+                    with open(initial_filepath, 'w', encoding='utf-8') as f:
+                        f.write(initial_report)
+                    
+                    st.success("✅ Initial report generated successfully!")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"❌ Error during analysis: {e}")
+
+with upload_tab2:
+    uploaded_images = st.file_uploader(
+        "Upload image file(s)",
+        type=['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'],
+        help="Upload RCC structural drawing image(s) for analysis. You can upload multiple images.",
+        accept_multiple_files=True,
+        key="image_uploader"
+    )
+
+    if uploaded_images is not None and len(uploaded_images) > 0:
+        # Process and save uploaded images
+        pil_images = []
+        image_names = []
+        
+        for uploaded_image in uploaded_images:
+            # Save uploaded image
+            image_path = os.path.join(IMAGES_DIR, uploaded_image.name)
+            with open(image_path, "wb") as f:
+                f.write(uploaded_image.getbuffer())
+            
+            # Convert to PIL Image
             try:
-                initial_report = analyze_rcc_drawing(pdf_path, INITIAL_EXTRACTION_PROMPT)
-                st.session_state.initial_report = initial_report
-                
-                # Save the initial report
-                timestamp = int(time.time())
-                initial_filename = f"initial_report_{os.path.basename(uploaded_file.name)}_{timestamp}.md"
-                initial_filepath = os.path.join(FIRST_EXTRACT_DIR, initial_filename)
-                with open(initial_filepath, 'w', encoding='utf-8') as f:
-                    f.write(initial_report)
-                
-                st.success("✅ Initial report generated successfully!")
+                pil_image = Image.open(uploaded_image)
+                # Convert to RGB if necessary (for formats like PNG with transparency)
+                if pil_image.mode in ('RGBA', 'LA', 'P'):
+                    pil_image = pil_image.convert('RGB')
+                pil_images.append(pil_image)
+                image_names.append(uploaded_image.name)
             except Exception as e:
-                st.error(f"❌ Error during analysis: {e}")
+                st.error(f"❌ Error processing image {uploaded_image.name}: {e}")
+                continue
+        
+        if pil_images:
+            st.session_state.uploaded_images = pil_images
+            st.session_state.image_names = image_names
+            st.session_state.pdf_filename = ", ".join(image_names) if len(image_names) > 1 else image_names[0]
+            st.session_state.file_type = 'image'
+            
+            # Display uploaded images
+            st.success(f"✅ {len(pil_images)} image(s) uploaded successfully!")
+            cols = st.columns(min(3, len(pil_images)))
+            for idx, (img, name) in enumerate(zip(pil_images, image_names)):
+                with cols[idx % 3]:
+                    st.image(img, caption=name, use_container_width=True)
+
+    # Generate initial report button (show if images are available in session state)
+    if st.session_state.uploaded_images:
+        if st.button("🔍 Generate Initial Report", type="primary", key="generate_image_report"):
+            with st.spinner("Analyzing image(s) and generating initial compliance report..."):
+                try:
+                    initial_report = analyze_rcc_drawing_from_images(
+                        st.session_state.uploaded_images, 
+                        INITIAL_EXTRACTION_PROMPT
+                    )
+                    st.session_state.initial_report = initial_report
+                    
+                    # Save the initial report
+                    timestamp = int(time.time())
+                    # Use stored image names or fallback to pdf_filename
+                    img_names = st.session_state.image_names if st.session_state.image_names else [st.session_state.pdf_filename] if st.session_state.pdf_filename else ["image"]
+                    image_name_str = "_".join([os.path.splitext(name)[0] for name in img_names[:3]])
+                    if len(img_names) > 3:
+                        image_name_str += f"_and_{len(img_names)-3}_more"
+                    initial_filename = f"initial_report_{image_name_str}_{timestamp}.md"
+                    initial_filepath = os.path.join(FIRST_EXTRACT_DIR, initial_filename)
+                    with open(initial_filepath, 'w', encoding='utf-8') as f:
+                        f.write(initial_report)
+                    
+                    st.success("✅ Initial report generated successfully!")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"❌ Error during analysis: {e}")
 
 # Display Full Initial Report
 if st.session_state.initial_report:
@@ -473,7 +564,13 @@ if st.session_state.initial_report:
                     
                     # Save final report to RESULT folder
                     timestamp = int(time.time())
-                    final_filename = f"final_report_{os.path.basename(uploaded_file.name)}_{timestamp}.md"
+                    if st.session_state.file_type == 'pdf' and st.session_state.pdf_filename:
+                        base_name = os.path.basename(st.session_state.pdf_filename)
+                    elif st.session_state.file_type == 'image' and st.session_state.pdf_filename:
+                        base_name = st.session_state.pdf_filename.replace(", ", "_").replace(" ", "_")
+                    else:
+                        base_name = "unknown"
+                    final_filename = f"final_report_{base_name}_{timestamp}.md"
                     final_filepath = os.path.join(RESULT_DIR, final_filename)
                     with open(final_filepath, 'w', encoding='utf-8') as f:
                         f.write(final_report)
@@ -539,7 +636,7 @@ with st.sidebar:
     
     st.header("📝 Instructions")
     st.markdown("""
-    1. Upload your PDF drawing
+    1. Upload your PDF or Image drawing
     2. Generate initial report
     3. Review missing information
     4. Provide additional details

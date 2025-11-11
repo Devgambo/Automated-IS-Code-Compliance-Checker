@@ -159,9 +159,10 @@ def generate_compliance_report(
 
 **Important:** Do not ask for more information. Provide the updated report based only on the context provided. If information is still missing after integration, clearly state it in the "Missing or Wrong Information" section.
 
+**At the End of the report state the date and time in the format of "Date: YYYY-MM-DD HH:MM:SS".**
+
 ### Initial Preliminary Report with Additional User Input:
 {Initial_report}
-
 ---
 
 Please generate the final compliance report now."""

@@ -33,12 +33,12 @@ def pil_to_base64(image):
     image.save(buffered, format="PNG")
     return base64.b64encode(buffered.getvalue()).decode('utf-8')
 
-def analyze_rcc_drawing(pdf_path, prompt_text):
+def analyze_rcc_drawing_from_images(images, prompt_text):
     """
-    Analyzes an RCC drawing PDF using the OpenRouter API.
+    Analyzes RCC drawing images directly using the OpenRouter API.
 
     Args:
-        pdf_path (str): The path to the PDF file.
+        images (list): List of PIL Image objects to analyze.
         prompt_text (str): The text prompt to guide the analysis.
 
     Returns:
@@ -54,10 +54,7 @@ def analyze_rcc_drawing(pdf_path, prompt_text):
     )
 
     try:
-        print(f"Converting PDF '{pdf_path}' to images...")
-        images = pdf_to_images(pdf_path)
-        print(f"Successfully converted {len(images)} pages to images.")
-
+        print(f"Processing {len(images)} image(s)...")
         base64_images = [pil_to_base64(img) for img in images]
 
         messages = [
@@ -85,6 +82,38 @@ def analyze_rcc_drawing(pdf_path, prompt_text):
         print("Received response from OpenRouter.")
         
         return response.choices[0].message.content
+
+    except Exception as e:
+        print(f"An error occurred during the analysis: {e}")
+        return f"Error: Could not analyze the images. {e}"
+
+def analyze_rcc_drawing(pdf_path, prompt_text):
+    """
+    Analyzes an RCC drawing PDF using the OpenRouter API.
+
+    Args:
+        pdf_path (str): The path to the PDF file.
+        prompt_text (str): The text prompt to guide the analysis.
+
+    Returns:
+        str: The generated text response from the model.
+    """
+    api_key = os.getenv("OPENROUTER_API_KEY")
+    if not api_key:
+        raise ValueError("OPENROUTER_API_KEY not found in .env file.")
+
+    client = OpenAI(
+        base_url="https://openrouter.ai/api/v1",
+        api_key=api_key,
+    )
+
+    try:
+        print(f"Converting PDF '{pdf_path}' to images...")
+        images = pdf_to_images(pdf_path)
+        print(f"Successfully converted {len(images)} pages to images.")
+
+        # Use the shared function for image analysis
+        return analyze_rcc_drawing_from_images(images, prompt_text)
 
     except Exception as e:
         print(f"An error occurred during the analysis: {e}")
