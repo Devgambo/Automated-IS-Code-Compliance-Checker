@@ -94,50 +94,244 @@ def markdown_to_pdf(markdown_text: str, output_path: str):
     # Try fallback with reportlab (better Windows support)
     try:
         from reportlab.lib.pagesizes import letter
-        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
         from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
         from reportlab.lib.units import inch
+        from reportlab.lib import colors
         import html
         
-        # Convert markdown to HTML-like format for reportlab
-        text = markdown_text
-        # Simple markdown to HTML conversion for reportlab
-        text = re.sub(r'^#+\s+(.+)$', r'<b>\1</b>', text, flags=re.MULTILINE)
-        text = re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', text)
-        text = re.sub(r'\*(.+?)\*', r'<i>\1</i>', text)
-        text = re.sub(r'`(.+?)`', r'<font name="Courier">\1</font>', text)
-        
         # Create PDF
-        doc = SimpleDocTemplate(output_path, pagesize=letter)
+        doc = SimpleDocTemplate(output_path, pagesize=letter, 
+                               rightMargin=72, leftMargin=72,
+                               topMargin=72, bottomMargin=18)
         styles = getSampleStyleSheet()
         story = []
         
-        # Custom style for better formatting
-        custom_style = ParagraphStyle(
-            'Custom',
-            parent=styles['Normal'],
-            fontSize=11,
-            leading=14,
-            spaceAfter=12,
+        # Define custom styles
+        h1_style = ParagraphStyle(
+            'H1',
+            parent=styles['Heading1'],
+            fontSize=14,
+            textColor=colors.HexColor('#1a1a1a'),
+            spaceAfter=8,
+            spaceBefore=8,
         )
         
-        # Split text into paragraphs and add to PDF
-        for line in text.split('\n'):
-            if line.strip():
-                # Escape HTML special characters but preserve our formatting tags
-                # First, temporarily replace our tags
-                line = line.replace('<b>', '___BOLD_START___').replace('</b>', '___BOLD_END___')
-                line = line.replace('<i>', '___ITALIC_START___').replace('</i>', '___ITALIC_END___')
-                line = line.replace('<font name="Courier">', '___CODE_START___').replace('</font>', '___CODE_END___')
-                # Escape HTML
-                line = html.escape(line)
-                # Restore our tags
-                line = line.replace('___BOLD_START___', '<b>').replace('___BOLD_END___', '</b>')
-                line = line.replace('___ITALIC_START___', '<i>').replace('___ITALIC_END___', '</i>')
-                line = line.replace('___CODE_START___', '<font name="Courier">').replace('___CODE_END___', '</font>')
-                story.append(Paragraph(line, custom_style))
-            else:
-                story.append(Spacer(1, 0.2*inch))
+        h2_style = ParagraphStyle(
+            'H2',
+            parent=styles['Heading2'],
+            fontSize=12,
+            textColor=colors.HexColor('#2a2a2a'),
+            spaceAfter=6,
+            spaceBefore=6,
+        )
+        
+        h3_style = ParagraphStyle(
+            'H3',
+            parent=styles['Heading3'],
+            fontSize=11,
+            textColor=colors.HexColor('#3a3a3a'),
+            spaceAfter=5,
+            spaceBefore=5,
+        )
+        
+        normal_style = ParagraphStyle(
+            'Normal',
+            parent=styles['Normal'],
+            fontSize=9,
+            leading=11,
+            spaceAfter=4,
+        )
+        
+        # Helper function to convert markdown inline formatting to reportlab XML
+        def convert_inline_formatting(text):
+            # Escape HTML first
+            text = html.escape(text)
+            # Convert markdown to reportlab XML
+            # Bold: **text** or __text__ (process before italic to avoid conflicts)
+            text = re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', text)
+            text = re.sub(r'__(.+?)__', r'<b>\1</b>', text)
+            # Code: `text` (process before italic)
+            text = re.sub(r'`(.+?)`', r'<font name="Courier" color="darkblue">\1</font>', text)
+            # Italic: *text* (single asterisk, not double)
+            # Match *text* but not **text** (already processed)
+            text = re.sub(r'(?<!\*)\*([^*]+?)\*(?!\*)', r'<i>\1</i>', text)
+            # Italic: _text_ (single underscore, not double)
+            text = re.sub(r'(?<!_)_([^_]+?)_(?!_)', r'<i>\1</i>', text)
+            return text
+        
+        # Helper function to parse markdown table
+        def parse_table(lines, start_idx):
+            """Parse a markdown table starting at start_idx. Returns (table_data, end_idx)"""
+            table_data = []
+            i = start_idx
+            
+            # Read header
+            if i >= len(lines) or not lines[i].strip().startswith('|'):
+                return None, start_idx
+            
+            header_line = lines[i].strip()
+            if not header_line.startswith('|') or not header_line.endswith('|'):
+                return None, start_idx
+            
+            headers = [cell.strip() for cell in header_line.split('|')[1:-1]]
+            i += 1
+            
+            # Skip separator row (|---|---|)
+            if i < len(lines) and re.match(r'^\|[\s\-:]+$', lines[i].strip()):
+                i += 1
+            
+            # Read data rows
+            while i < len(lines):
+                row_line = lines[i].strip()
+                if not row_line.startswith('|'):
+                    break
+                
+                cells = [cell.strip() for cell in row_line.split('|')[1:-1]]
+                if len(cells) == len(headers):
+                    table_data.append(cells)
+                i += 1
+            
+            if table_data:
+                return [headers] + table_data, i
+            return None, start_idx
+        
+        # Parse markdown line by line
+        lines = markdown_text.split('\n')
+        i = 0
+        in_list = False
+        list_items = []
+        
+        while i < len(lines):
+            line = lines[i].rstrip()
+            
+            # Empty line
+            if not line.strip():
+                if in_list and list_items:
+                    # Add list items
+                    for item in list_items:
+                        bullet_text = convert_inline_formatting(item)
+                        story.append(Paragraph(f"• {bullet_text}", normal_style))
+                    list_items = []
+                    in_list = False
+                story.append(Spacer(1, 0.1*inch))
+                i += 1
+                continue
+            
+            # Tables (check before headers to avoid conflicts)
+            if line.strip().startswith('|') and '|' in line[1:]:
+                table_data, new_idx = parse_table(lines, i)
+                if table_data:
+                    # Create table
+                    table_style = TableStyle([
+                        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#f0f0f0')),
+                        ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor('#000000')),
+                        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                        ('FONTSIZE', (0, 0), (-1, 0), 8),
+                        ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+                        ('TOPPADDING', (0, 0), (-1, 0), 8),
+                        ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+                        ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
+                        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+                        ('FONTSIZE', (0, 1), (-1, -1), 8),
+                        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+                        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                        ('LEFTPADDING', (0, 0), (-1, -1), 4),
+                        ('RIGHTPADDING', (0, 0), (-1, -1), 4),
+                        ('TOPPADDING', (0, 1), (-1, -1), 5),
+                        ('BOTTOMPADDING', (0, 1), (-1, -1), 5),
+                    ])
+                    
+                    # Convert table data to Paragraphs with formatting
+                    formatted_table_data = []
+                    for row_idx, row in enumerate(table_data):
+                        formatted_row = []
+                        for cell in row:
+                            formatted_cell = Paragraph(convert_inline_formatting(cell), normal_style)
+                            formatted_row.append(formatted_cell)
+                        formatted_table_data.append(formatted_row)
+                    
+                    # Create table with auto column widths
+                    # Calculate available width (page width minus margins)
+                    available_width = letter[0] - 144  # 72*2 for left and right margins
+                    col_widths = [available_width / len(table_data[0])] * len(table_data[0])
+                    pdf_table = Table(formatted_table_data, colWidths=col_widths)
+                    pdf_table.setStyle(table_style)
+                    story.append(pdf_table)
+                    story.append(Spacer(1, 0.15*inch))
+                    i = new_idx
+                    continue
+            
+            # Headers
+            if line.startswith('#'):
+                if in_list and list_items:
+                    for item in list_items:
+                        bullet_text = convert_inline_formatting(item)
+                        story.append(Paragraph(f"• {bullet_text}", normal_style))
+                    list_items = []
+                    in_list = False
+                
+                if line.startswith('###'):
+                    header_text = convert_inline_formatting(line[3:].strip())
+                    story.append(Paragraph(header_text, h3_style))
+                elif line.startswith('##'):
+                    header_text = convert_inline_formatting(line[2:].strip())
+                    story.append(Paragraph(header_text, h2_style))
+                elif line.startswith('#'):
+                    header_text = convert_inline_formatting(line[1:].strip())
+                    story.append(Paragraph(header_text, h1_style))
+                i += 1
+                continue
+            
+            # Horizontal rule
+            if re.match(r'^---+$|^===+$|^\*\*\*+$', line):
+                story.append(Spacer(1, 0.15*inch))
+                story.append(Paragraph('<para alignment="center">' + '─' * 50 + '</para>', normal_style))
+                story.append(Spacer(1, 0.15*inch))
+                i += 1
+                continue
+            
+            # Unordered list
+            if re.match(r'^[-*+]\s+', line):
+                in_list = True
+                item_text = re.sub(r'^[-*+]\s+', '', line)
+                list_items.append(item_text)
+                i += 1
+                continue
+            
+            # Ordered list
+            if re.match(r'^\d+\.\s+', line):
+                if in_list and list_items:
+                    for item in list_items:
+                        bullet_text = convert_inline_formatting(item)
+                        story.append(Paragraph(f"• {bullet_text}", normal_style))
+                    list_items = []
+                    in_list = False
+                item_text = re.sub(r'^\d+\.\s+', '', line)
+                item_text = convert_inline_formatting(item_text)
+                story.append(Paragraph(item_text, normal_style))
+                i += 1
+                continue
+            
+            # Regular paragraph
+            if in_list and list_items:
+                for item in list_items:
+                    bullet_text = convert_inline_formatting(item)
+                    story.append(Paragraph(f"• {bullet_text}", normal_style))
+                list_items = []
+                in_list = False
+            
+            # Convert inline formatting and add paragraph
+            formatted_text = convert_inline_formatting(line)
+            story.append(Paragraph(formatted_text, normal_style))
+            i += 1
+        
+        # Handle any remaining list items
+        if in_list and list_items:
+            for item in list_items:
+                bullet_text = convert_inline_formatting(item)
+                story.append(Paragraph(f"• {bullet_text}", normal_style))
         
         doc.build(story)
         return True, None
