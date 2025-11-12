@@ -77,7 +77,8 @@ def analyze_rcc_drawing_from_images(images, prompt_text):
         response = client.chat.completions.create(
             model="google/gemini-2.5-flash",
             messages=messages,
-            max_tokens=8000, # Set a higher limit for detailed reports
+            max_tokens=8000,
+            temperature=0,
         )
         print("Received response from OpenRouter.")
         

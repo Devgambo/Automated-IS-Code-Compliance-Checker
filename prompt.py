@@ -123,7 +123,59 @@ Also, mention/check about shear reinforcement and stirups.
 
 Step 4: Output Format
 - Present the results as a clean, well-structured checklist in Markdown format.
-- Use a table for the main checklist with columns: "Criteria", "Extracted Value", "Compliance Check", and "Status".
+- Strictly follow the exact Markdown skeleton shown below. Do not add, remove, or reorder headings or sections.
+- The table in Step 2 & 3 must keep the criteria in the same order (1 through 22). Do not merge or split rows.
+- Status values must be one of the following exact labels: "Compliant", "Non-Compliant", "Missing Information", "Cannot Verify", "Not Applicable".
+- Do not prefix the Status cell with extra words like "Flagged" or "Status". Keep responses concise.
+
+### Output Template (Copy and Fill)
+
+### Step 0: Initial Document Check
+- **0.1:** <Your text here>
+- **0.2:** <Your text here>
+- **0.3:** <Your text here>
+
+### Step 1: Locate the "NOTES" Section
+- **Status:** <Your text here>
+
+### Step 2 & 3: Extract and Verify Design Parameters from "NOTES"
+
+| Criteria | Extracted Value | Compliance Check | Status |
+|---|---|---|---|
+| **1. Grade of Concrete** | <...> | <...> | <Status> |
+| **2. Reinforcement Bars** | <...> | <...> | <Status> |
+| **3. Lap Length** | <...> | <...> | <Status> |
+| **4. Clear Cover** | <...> | <...> | <Status> |
+| **5. Development Length (Ld)** | <...> | <...> | <Status> |
+| **6. Safe Bearing Capacity (SBC) of soil** | <...> | <...> | <Status> |
+| **7. Seismic Zone and Wind Load** | <...> | <...> | <Status> |
+| **8. Building Limitations** | <...> | <...> | <Status> |
+| **9. Structure's Purpose** | <...> | <...> | <Status> |
+| **10. Floor Heights** | <...> | <...> | <Status> |
+| **11. Schedule of Footings** | <...> | <...> | <Status> |
+| **12. Footing Type** | <...> | <...> | <Status> |
+| **13. Reinforcement in High-Rise Buildings** | <...> | <...> | <Status> |
+| **14. Raft Foundation Reinforcement** | <...> | <...> | <Status> |
+| **15. Lift Design** | <...> | <...> | <Status> |
+| **16. Soil Improvement** | <...> | <...> | <Status> |
+| **17. Column Ties** | <...> | <...> | <Status> |
+| **18. Plan of Ties** | <...> | <...> | <Status> |
+| **19. Outer Ties Check** | <...> | <...> | <Status> |
+| **20. Cross-Section Area** | <...> | <...> | <Status> |
+| **21. Steel Curtailment** | <...> | <...> | <Status> |
+| **22. Maximum Steel Percentage in Columns** | <...> | <...> | <Status> |
+
+### Step 5: Report Missing or Wrong Information
+1. <Item 1>
+2. <Item 2>
+3. <Item 3>
+
+### Summary of Compliance
+- **Total Criteria Evaluated:** <...>
+- **Compliant Items:** <...>
+- **Non-Compliant Items:** <...>
+- **Missing Information Items:** <...>
+- **Overall Verdict:** <...>
 
 Step 5: Report Missing/Wrong Information
 - At the end of the report, create a dedicated section titled "Missing or Wrong Information".

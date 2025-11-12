@@ -1,0 +1,1 @@
+Error: Could not analyze the images. Error code: 402 - {'error': {'message': 'This request requires more credits, or fewer max_tokens. You requested up to 8000 tokens, but can only afford 7912. To increase, visit https://openrouter.ai/settings/credits and upgrade to a paid account', 'code': 402, 'metadata': {'provider_name': None}}, 'user_id': 'user_35BAqVmEb3RMw2PvM3LEydS2zwJ'}

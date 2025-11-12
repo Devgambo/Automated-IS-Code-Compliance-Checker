@@ -114,36 +114,36 @@ def markdown_to_pdf(markdown_text: str, output_path: str):
         h1_style = ParagraphStyle(
             'H1',
             parent=styles['Heading1'],
-            fontSize=14,
+            fontSize=12,
             textColor=colors.HexColor('#1a1a1a'),
-            spaceAfter=8,
-            spaceBefore=8,
+            spaceAfter=6,
+            spaceBefore=6,
         )
         
         h2_style = ParagraphStyle(
             'H2',
             parent=styles['Heading2'],
-            fontSize=12,
+            fontSize=10,
             textColor=colors.HexColor('#2a2a2a'),
-            spaceAfter=6,
-            spaceBefore=6,
+            spaceAfter=5,
+            spaceBefore=5,
         )
         
         h3_style = ParagraphStyle(
             'H3',
             parent=styles['Heading3'],
-            fontSize=11,
+            fontSize=9,
             textColor=colors.HexColor('#3a3a3a'),
-            spaceAfter=5,
-            spaceBefore=5,
+            spaceAfter=4,
+            spaceBefore=4,
         )
         
         normal_style = ParagraphStyle(
             'Normal',
             parent=styles['Normal'],
-            fontSize=9,
-            leading=11,
-            spaceAfter=4,
+            fontSize=8,
+            leading=10,
+            spaceAfter=3,
         )
         
         # Helper function to convert markdown inline formatting to reportlab XML
@@ -231,13 +231,13 @@ def markdown_to_pdf(markdown_text: str, output_path: str):
                         ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor('#000000')),
                         ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
                         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                        ('FONTSIZE', (0, 0), (-1, 0), 8),
-                        ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
-                        ('TOPPADDING', (0, 0), (-1, 0), 8),
+                        ('FONTSIZE', (0, 0), (-1, 0), 7),
+                        ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
+                        ('TOPPADDING', (0, 0), (-1, 0), 6),
                         ('BACKGROUND', (0, 1), (-1, -1), colors.white),
                         ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
                         ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-                        ('FONTSIZE', (0, 1), (-1, -1), 8),
+                        ('FONTSIZE', (0, 1), (-1, -1), 7),
                         ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
                         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
                         ('LEFTPADDING', (0, 0), (-1, -1), 4),
@@ -287,10 +287,8 @@ def markdown_to_pdf(markdown_text: str, output_path: str):
                 i += 1
                 continue
             
-            # Horizontal rule
+            # Horizontal rule - just add spacing, don't render dashes
             if re.match(r'^---+$|^===+$|^\*\*\*+$', line):
-                story.append(Spacer(1, 0.15*inch))
-                story.append(Paragraph('<para alignment="center">' + '─' * 50 + '</para>', normal_style))
                 story.append(Spacer(1, 0.15*inch))
                 i += 1
                 continue
@@ -355,7 +353,7 @@ st.set_page_config(
 )
 
 st.title("🧑‍🔬 Foundation compliance check using AI")
-st.markdown("Analyze RCC structural drawings for compliance with IS 456:2000 and SP 34")
+st.markdown("Analyze Structural drawings for compliance with IS 456:2000 and SP 34")
 
 # Initialize session state
 if 'initial_report' not in st.session_state:
@@ -493,7 +491,6 @@ with upload_tab2:
 if st.session_state.initial_report:
     st.header("📋 Step 2: Initial Compliance Report")
     st.markdown("---")
-    print(st.session_state.initial_report)
     st.markdown(st.session_state.initial_report)
     st.markdown("---")
     init_col1, init_col2 = st.columns(2)
