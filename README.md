@@ -1,58 +1,61 @@
 # WO-380: Automated IS Code Compliance Checker for Structural Design Drawings
 
-
 ## 🚀 Project Overview
 
-Automate compliance checks for structural design drawings (PDFs). The system parses drawings, extracts key parameters, and generates AI-assisted reports aligned with Indian Standards (e.g., IS 456, IS 1786, IS 13920).
+An AI-powered system that automates compliance checking for structural design drawings (PDFs). The system parses RCC (Reinforced Cement Concrete) foundation drawings, extracts key parameters using computer vision, and generates comprehensive compliance reports aligned with Indian Standards (IS 456:2000 and SP 34:1987).
 
----
+### Key Capabilities
 
-## 🔍 What This System Does
-
-- **Uploads structural design PDFs** into `WO-380/uploads/`
-- **Extracts** dimensions, reinforcement details, grades, and annotations
-- **Generates markdown reports** under `WO-380/reports/`
+- **PDF to Image Conversion**: Converts structural design PDFs to high-quality images at 200 DPI
+- **AI-Powered Analysis**: Uses Google Gemini Vision AI (via OpenRouter) to extract structural information
+- **Comprehensive Data Extraction**: Extracts dimensions, reinforcement details, material specifications, and compliance parameters
+- **Automated Report Generation**: Creates detailed markdown reports with extracted data and compliance status
+- **RAG-Enhanced Analysis**: Retrieval-Augmented Generation (RAG) system for accurate IS code clause citations
+- **Vector Database Integration**: ChromaDB for semantic search of IS code provisions
 
 ---
 
 ## ✨ Features
 
-<<<<<<< HEAD
-- **PDF to Image Conversion**: Converts structural design PDFs to high-quality images
-- **AI-Powered Analysis**: Uses Google Gemini Vision AI to extract structural information
-- **Comprehensive Data Extraction**: Extracts dimensions, reinforcement details, material specifications, and more
-- **Automated Report Generation**: Creates detailed markdown reports with extracted data
-- **Multiple AI Models Support**: Supports Gemini, Groq, and Qwen Vision models
-- **IS 456:2000 Compliance Checker**: Comprehensive RCC structure compliance verification
-- **SP 34:1987 Detailing Checker**: Reinforcement detailing and anchorage compliance
-=======
-- **Gemini Vision-assisted analysis** via `gemini_vision.py`
-- **PDF tools** using `PyMuPDF` and `pdfplumber`
-- **Vector DB** with `chromadb` for semantic retrieval
-- **Embeddings** via `sentence-transformers`
-- **CLI workflow** driven by `WO-380/app.py`
->>>>>>> complete
+- **Vision-Assisted Analysis**: Google Gemini 2.5 Flash vision model for drawing interpretation
+- **PDF Processing**: PyMuPDF for high-quality PDF to image conversion
+- **Vector Database**: ChromaDB with sentence-transformers embeddings for code provision retrieval
+- **CLI Workflow**: Simple command-line interface for batch processing
+- **Comprehensive Extraction**: 22+ compliance criteria extraction including:
+  - Concrete and reinforcement grades
+  - Cover requirements and development lengths
+  - Foundation specifications
+  - Seismic zone considerations
+  - Detailing requirements
+- **Professional Reports**: Markdown reports with timestamped versions
+
+---
 
 ## 📋 Prerequisites
 
-- Python 3.10+
-- Git
-- Internet access for AI API calls
+- **Python 3.10+** (Python 3.11 recommended)
+- **Git** (for cloning the repository)
+- **Internet access** (for AI API calls)
+- **API Key**: OpenRouter API key for Gemini Vision access
+
+---
 
 ## 🛠️ Installation
 
-### 1. Clone the repository
+### 1. Clone the Repository
 
 ```bash
 git clone <repository-url>
 cd WO-380
 ```
 
-### 2. Create virtual environment
+### 2. Create Virtual Environment
 
 ```bash
+# Create virtual environment
 python -m venv .venv
 
+# Activate virtual environment
 # On Windows
 .venv\Scripts\activate
 
@@ -60,430 +63,427 @@ python -m venv .venv
 source .venv/bin/activate
 ```
 
-### 3. Install dependencies
+### 3. Install Dependencies
 
 ```bash
-pip install -r WO-380/requirements.txt
+pip install -r requirements.txt
 ```
 
-### 4. Environment variables
+### 4. Set Up Environment Variables
 
-<<<<<<< HEAD
-Create a `.env` file in the project root:
+Create a `.env` file in the project root directory:
 
 ```bash
-# For Gemini Vision AI
+# Required: OpenRouter API Key for Gemini Vision
+OPENROUTER_API_KEY=your_openrouter_api_key_here
+
+# Optional: For direct Gemini API access (if needed)
 GEMINI_API_KEY=your_gemini_api_key_here
-
-# For Groq Vision AI (optional)
-GROQ_API_KEY=your_groq_api_key_here
-
-# For Qwen Vision AI (optional)
-QWEN_API_KEY=your_qwen_api_key_here
 ```
 
-#### Getting API Keys:
+#### Getting API Keys
 
-- **Gemini API Key**: Visit [Google AI Studio](https://makersuite.google.com/app/apikey) to get your API key
-- **Groq API Key**: Visit [Groq AI](https://console.groq.com/) to get your API key
-- **Qwen API Key**: Visit [Qwen AI](https://dashscope.console.aliyun.com/) to get your API key
+- **OpenRouter API Key**: Visit [OpenRouter](https://openrouter.ai/) to create an account and get your API key
+- **Gemini API Key** (optional): Visit [Google AI Studio](https://makersuite.google.com/app/apikey) for direct Gemini access
+
+---
 
 ## 🚀 Quick Start
 
 ### Basic Usage
 
-1. **Place your PDF file** in the project directory
-2. **Update the file name** in `main.py` (line 12):
-   ```python
-   pdf_path = "your_drawing.pdf"  # Change to your PDF filename
-   ```
-3. **Run the main script**:
+1. **Place your PDF file** in the `uploads/` directory:
    ```bash
-   python main.py
+   # Ensure the uploads directory exists
+   mkdir -p uploads
+   
+   # Copy your PDF file
+   cp your_drawing.pdf uploads/
    ```
+
+2. **Run the analysis**:
+   ```bash
+   python app.py your_drawing.pdf
+   ```
+
+3. **View the report**: The system will:
+   - Convert PDF to images
+   - Analyze using Gemini Vision AI
+   - Generate a comprehensive compliance report
+   - Save results to `reports/initial_report_<timestamp>.md`
 
 ### Example Output
 
-The script will:
-- Convert your PDF to an image
-- Analyze it using Gemini Vision AI
-- Generate a comprehensive report
-- Save results to a timestamped markdown file
+```bash
+--- RCC Design Compliance Check AI ---
+Note: Please make sure you have created a .env file with your OPENROUTER_API_KEY.
+Found PDF file: uploads/7.pdf
+
+Starting initial analysis...
+Initial analysis complete.
+
+--- INITIAL REPORT ---
+[Comprehensive markdown report with compliance checklist]
+
+Report saved to reports/initial_report_1234567890.md
+Compliance check process finished.
+```
+
+---
 
 ## 📖 Detailed Usage Guide
 
-### 1. Using the Main Script (`main.py`)
+### Command-Line Interface
 
-The main script provides a complete workflow:
+The main entry point is `app.py`, which provides a simple CLI:
 
-```python
-# Edit these lines in main.py
-pdf_path = "1st floor Slab details.pdf"  # Your PDF file
-image_path = "1st floor Slab details.jpg"  # Output image name
+```bash
+python app.py <filename>
 ```
 
+**Arguments:**
+- `filename`: The name of the PDF file in the `uploads/` directory (e.g., `7.pdf`)
+
 **What it does:**
-- Converts PDF to high-resolution image
-- Extracts structural data using AI
-- Generates detailed compliance report
-- Saves results to markdown file
+1. Validates the PDF file exists in `uploads/`
+2. Converts PDF pages to high-resolution images (200 DPI)
+3. Sends images to Gemini Vision AI for analysis
+4. Extracts compliance-relevant information
+5. Generates a structured markdown report
+6. Saves the report with a timestamp
 
-### 2. Using Individual Components
+### Programmatic Usage
 
-#### PDF to Image Conversion
+You can also use the modules directly in your Python code:
+
+```python
+from llm_handler import analyze_rcc_drawing
+from prompt import INITIAL_EXTRACTION_PROMPT
+
+# Analyze a PDF
+pdf_path = "uploads/your_drawing.pdf"
+report = analyze_rcc_drawing(pdf_path, INITIAL_EXTRACTION_PROMPT)
+print(report)
+```
+
+### PDF to Image Conversion
 
 ```python
 from pdf_to_image import pdf_to_image
 
-# Convert PDF to image
+# Convert a specific page to image
 image_path = pdf_to_image(
-    pdf_path="your_drawing.pdf",
-    output_path="output.jpg",
-    page_number=1,  # Page to convert
+    pdf_path="uploads/drawing.pdf",
+    output_image="output.jpg",
+    page_number=1,  # Page to convert (1-indexed)
     zoom=2  # Zoom factor for quality
 )
 ```
 
-#### AI Analysis with Different Models
-
-**Gemini Vision:**
-```python
-from gemini_vision import analyse_image
-from prompt import prompt1
-
-result = analyse_image("your_image.jpg", prompt1)
-print(result)
-```
-
-**Groq Vision:**
-```python
-from groq_vision import analyse_image
-from prompt import prompt1
-
-result = analyse_image("your_image.jpg", prompt1)
-print(result)
-```
-
-**Qwen Vision:**
-```python
-from qwen_vision import analyse_image
-from prompt import prompt1
-
-result = analyse_image("your_image.jpg", prompt1)
-print(result)
-```
-
-### 3. Customizing the Analysis
-
-#### Modifying the Prompt
-
-Edit `prompt.py` to customize what information to extract:
+### Using Vector Database for Code Retrieval
 
 ```python
-prompt1 = """
-Extract the following information from this structural drawing:
-- Drawing title and number
-- Dimensions and measurements
-- Reinforcement details
-- Material specifications
-- Any compliance-related information
-"""
+from vector_db import VectorDB
+from embedding_service import generate_embedding
+
+# Initialize vector database
+db = VectorDB()
+
+# Generate embedding for query
+query = "What are the cover requirements for foundations?"
+embedding = generate_embedding(query)
+
+# Search for relevant code provisions
+results = db.query(embedding, top_k=5)
 ```
 
-#### Adding New AI Models
-
-1. Create a new file (e.g., `new_model_vision.py`)
-2. Implement the `analyse_image(image_path, prompt)` function
-3. Update `main.py` to use your new model
-
-### 4. Using Compliance Checkers
-
-#### IS 456:2000 Compliance Checker
-
-```python
-from IS_456_2000 import DesignChecker, Material, Dimensions, Loads, Reinforcement, MemberType, ExposureCondition
-
-# Create a design checker
-checker = DesignChecker()
-
-# Define your structure
-material = Material(fck=25, fy=415)
-dimensions = Dimensions(length=5000, width=300, depth=500, effective_depth=450, cover=25)
-loads = Loads(dead_load=15, live_load=10)
-reinforcement = Reinforcement(main_steel_area=1256, main_bar_dia=20)
-
-# Check compliance
-results = checker.check_compliance(
-    member_type=MemberType.BEAM,
-    dimensions=dimensions,
-    material=material,
-    loads=loads,
-    exposure=ExposureCondition.MODERATE,
-    reinforcement=reinforcement
-)
-
-# Generate report
-report = checker.generate_compliance_report(results)
-print(report)
-```
-
-#### SP 34:1987 Detailing Checker
-
-```python
-from SP_34 import DetailingChecker, MemberGeometry, ReinforcementBar, SteelGrade, ConcreteGrade
-
-# Create a detailing checker
-checker = DetailingChecker()
-
-# Define member geometry and reinforcement
-geometry = MemberGeometry(length=5000, width=300, depth=500, effective_depth=450, cover=25)
-reinforcement = [
-    ReinforcementBar(diameter=20, number=4, spacing=150, length=5000, position="bottom"),
-    ReinforcementBar(diameter=12, number=2, spacing=200, length=5000, position="top")
-]
-
-# Check detailing compliance
-results = checker.check_beam_detailing(
-    geometry=geometry,
-    reinforcement=reinforcement,
-    steel_grade=SteelGrade.FE415,
-    concrete_grade=ConcreteGrade.M25
-)
-
-# Generate detailed report
-report = checker.generate_detailing_report(results)
-print(report)
-```
+---
 
 ## 📊 Understanding the Output
 
 ### Generated Files
 
-1. **Image File**: High-resolution JPG version of your PDF
-2. **Markdown Report**: Comprehensive extraction report with timestamp
+1. **Markdown Report**: Comprehensive extraction report with timestamp
+   - Location: `reports/initial_report_<timestamp>.md`
+   - Format: GitHub-flavored markdown with tables and structured sections
 
 ### Report Structure
 
 The generated report includes:
-- **General Information**: Date, drawing details
-- **Drawing Information**: Title, number, revision, scale
-- **Personnel & Consultants**: Client, structural consultant details
-- **Grid System & Dimensions**: All measurements and spacings
-- **Slab Specifications**: Thickness, reinforcement details
-- **Beam Details**: Dimensions and reinforcement schedules
-- **Material Specifications**: Concrete and steel grades
-- **Cover & Development Requirements**: Clear cover specifications
-- **Summary Table**: All numeric data in organized format
+
+- **Document Type Verification**: Confirms if the drawing is a foundation drawing
+- **Site Location**: Extracted or flagged as missing
+- **Code Standards**: References to IS 456:2000 and SP 34:1987
+- **NOTES Section**: Verification of presence and completeness
+- **Compliance Checklist**: 22+ criteria with status indicators:
+  - ✅ Compliant
+  - ❌ Non-Compliant
+  - ⚠️ Missing Information
+  - ❓ Cannot Verify
+  - ➖ Not Applicable
+- **Extracted Values**: All dimensions, specifications, and annotations
+- **Summary Statistics**: Compliance percentage and breakdown
 
 ### Example Report Sections
 
+```markdown
+## Compliance Checklist
+
+| Criterion | Extracted Value | Code Requirement | Status | Notes |
+|-----------|----------------|------------------|--------|-------|
+| Concrete Grade | M25 | M20 minimum | ✅ Compliant | - |
+| Reinforcement Grade | Fe415 | Fe415/Fe500 | ✅ Compliant | - |
+| Clear Cover | 50mm | 40mm minimum | ✅ Compliant | - |
 ```
-**Slab Specifications**
-- Slab Thickness: 5" (127 mm)
-- Distribution Reinforcement: Y8 @ 10" c/c (254 mm)
-- General Slab Reinforcement: Y8 @ 7" c/c (178 mm)
-
-**Beam Details**
-- Beam FB20: 9" x 18" (229 mm x 457 mm)
-- Top Reinforcement: 3Y12
-- Bottom Reinforcement: 2Y16
-```
-
-## 🔧 Advanced Configuration
-
-### Environment Variables
-=======
-Create a `.env` at the repo root (ignored by git):
->>>>>>> complete
-
-```bash
-# Required
-GEMINI_API_KEY=your_gemini_api_key_here
-
-<<<<<<< HEAD
-# Optional - for other AI models
-GROQ_API_KEY=your_groq_key
-QWEN_API_KEY=your_qwen_key
-CONVERTAPI_SECRET=your_convertapi_secret
-```
-
-### Customizing Image Conversion
-
-In `pdf_to_image.py`, you can adjust:
-- **Page number**: Which page to convert
-- **Zoom factor**: Image quality (higher = better quality, larger file)
-- **Output format**: JPG, PNG, etc.
-
-### Error Handling
-
-The script includes comprehensive error handling:
-- Missing PDF files
-- Invalid API keys
-- Network connectivity issues
-- Image conversion failures
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-1. **"PDF file not found"**
-   - Ensure your PDF file is in the project directory
-   - Check the filename in `main.py` matches exactly
-
-2. **"GEMINI_API_KEY not found"**
-   - Create a `.env` file with your API key
-   - Ensure the key is valid and has sufficient credits
-
-3. **"Error converting PDF to image"**
-   - Check if the PDF is password-protected
-   - Ensure the PDF is not corrupted
-   - Try a different page number
-
-4. **Poor extraction results**
-   - Use higher zoom factor for better image quality
-   - Ensure the PDF has clear, readable text/drawings
-   - Try different AI models for comparison
-
-### Getting Help
-
-1. Check the generated image file to verify PDF conversion
-2. Review the console output for specific error messages
-3. Ensure all dependencies are installed correctly
-4. Verify your API keys are valid and have sufficient credits
-
-## 📁 Project Structure
-
-```
-WO-380/
-├── main.py                 # Main execution script
-├── pdf_to_image.py        # PDF to image conversion
-├── gemini_vision.py       # Gemini Vision AI integration
-├── groq_vision.py         # Groq Vision AI integration
-├── qwen_vision.py         # Qwen Vision AI integration
-├── prompt.py              # AI analysis prompts
-├── IS 456_2000.py         # IS 456:2000 compliance checker
-├── IS 456_2000.txt        # IS 456:2000 code text
-├── SP_34.py              # SP 34:1987 detailing checker
-├── SP_34.txt             # SP 34:1987 code text
-├── requirements.txt       # Python dependencies
-├── README.md             # This file
-├── .env                  # API keys (create this)
-└── extracted_data_*.md   # Generated reports
-```
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
-
-## 🙏 Acknowledgments
-
-- Google Gemini Vision AI for image analysis capabilities
-- ConvertAPI for PDF to image conversion
-- IS 456:2000 and SP 34:1987 code provisions for compliance checking
-- The civil engineering community for domain expertise
-=======
-# Optional
-CONVERTAPI_SECRET=your_convertapi_secret
-```
-
-> Get a Gemini API key from Google AI Studio: `https://makersuite.google.com/app/apikey`
->>>>>>> complete
-
----
-
-## 🚀 Quick Start (CLI)
-
-1. Place your PDF in `WO-380/uploads/` (e.g., `7.pdf`).
-2. Run the analyzer from the repo root:
-
-```bash
-python WO-380/app.py 7.pdf
-```
-
-Output:
-- A timestamped markdown report in `WO-380/reports/`, e.g., `initial_report_1760....md`.
-- Console printout of the initial report.
 
 ---
 
 ## 🧩 Key Modules
 
-- `WO-380/app.py`: CLI entrypoint; orchestrates extraction and saves reports
-- `WO-380/llm_handler.py`: High-level LLM workflow for RCC drawing analysis
-- `WO-380/gemini_vision.py`: Gemini Vision integration helpers
-- `WO-380/pdf_to_image.py`: PDF → image conversion utilities
-- `WO-380/vector_db.py`: ChromaDB vector store integration
-- `WO-380/embedding_service.py`: Embedding generation utilities
-- `WO-380/prompt.py`: Prompt templates for extraction
+### Core Modules
+
+- **`app.py`**: CLI entrypoint; orchestrates extraction and saves reports
+- **`llm_handler.py`**: High-level LLM workflow for RCC drawing analysis
+  - `analyze_rcc_drawing()`: Main function for PDF analysis
+  - `pdf_to_images()`: PDF to PIL Image conversion
+  - `analyze_rcc_drawing_from_images()`: Vision API integration
+- **`llm_service.py`**: LLM service helpers and report refinement
+- **`gemini_vision.py`**: Gemini Vision integration utilities
+- **`pdf_to_image.py`**: PDF to image conversion utilities
+- **`vector_db.py`**: ChromaDB vector store integration
+- **`embedding_service.py`**: Embedding generation using sentence-transformers
+- **`prompt.py`**: Prompt templates for extraction and analysis
+- **`data_loader.py`**: Data loading utilities for vector database
+
+### Supporting Files
+
+- **`requirements.txt`**: Python package dependencies
+- **`METHODOLOGY.md`**: Detailed technical methodology and architecture
+- **`DOCKER_SETUP.md`**: Docker development environment setup
 
 ---
 
-## 🧪 Notebooks
-
-- `WO-380/main.ipynb`, `WO-380/demo.ipynb`: Explore extraction steps and iterate on prompts.
-
----
-
-## 🐳 Run with Docker (optional)
-
-The included compose file provides a dev container with Python and ports for future services/notebooks.
-
-```bash
-docker compose up -d
-docker exec -it python-dev-env bash
-
-# inside container
-pip install -r WO-380/requirements.txt
-python WO-380/app.py 7.pdf
-```
-
-Ports exposed (if needed later): 8000, 5000, 8888.
-
----
-
-## 📁 Project Structure (selected)
+## 📁 Project Structure
 
 ```
 WO-380/
-├── app.py                 # CLI entrypoint
-├── gemini_vision.py       # Gemini Vision integration
-├── llm_handler.py         # LLM workflow
-├── llm_service.py         # LLM service helpers
-├── embedding_service.py   # Embeddings
-├── vector_db.py           # ChromaDB integration
-├── pdf_to_image.py        # PDF/image utilities
-├── prompt.py              # Prompt templates
-├── uploads/               # Place PDFs here
-├── reports/               # Generated markdown reports
-├── chroma_db/             # Vector DB data (gitignored)
-├── convertedimages/       # Generated images (gitignored)
-├── RESULT/                # Legacy/exported reports (gitignored)
-└── requirements.txt
+├── app.py                      # CLI entrypoint
+├── llm_handler.py              # Main LLM workflow
+├── llm_service.py              # LLM service helpers
+├── gemini_vision.py            # Gemini Vision integration
+├── embedding_service.py        # Embeddings generation
+├── vector_db.py               # ChromaDB integration
+├── pdf_to_image.py            # PDF/image utilities
+├── prompt.py                   # Prompt templates
+├── data_loader.py              # Data loading utilities
+├── requirements.txt            # Python dependencies
+├── README.md                   # This file
+├── METHODOLOGY.md              # Technical documentation
+├── DOCKER_SETUP.md            # Docker setup guide
+├── .env                        # API keys (create this)
+│
+├── uploads/                    # Place PDFs here
+├── reports/                    # Generated markdown reports
+├── chroma_db/                  # Vector DB data (auto-created)
+├── convertedimages/            # Generated images (auto-created)
+├── SP34_md/                    # SP 34 code documents
+└── sample_pdfs/               # Sample test PDFs
 ```
 
-> Note: Large/binary/data folders (e.g., `uploads/`, `reports/`, `chroma_db/`, `convertedimages/`, `RESULT/`) are ignored by git via `.gitignore`.
+> **Note**: Large/binary/data folders (`uploads/`, `reports/`, `chroma_db/`, `convertedimages/`) are ignored by git via `.gitignore`.
+
+---
+
+## 🐳 Docker Setup (Optional)
+
+The project includes Docker support for a consistent development environment. See `DOCKER_SETUP.md` for detailed instructions.
+
+### Quick Docker Commands
+
+```bash
+# Build the Docker image
+docker compose build
+
+# Start the development environment
+docker compose up -d
+
+# Access the container shell
+docker exec -it python-dev-env bash
+
+# Inside container: install dependencies and run
+pip install -r requirements.txt
+python app.py 7.pdf
+```
 
 ---
 
 ## 🐛 Troubleshooting
 
-- **File not found**: Ensure the PDF is inside `WO-380/uploads/` and pass the exact filename.
-- **Missing API key**: Create `.env` with `GEMINI_API_KEY` at the repo root.
-- **ChromaDB errors**: Delete and re-create `WO-380/chroma_db/` if the index is corrupted.
+### Common Issues
+
+1. **"File not found" Error**
+   - Ensure the PDF is in the `uploads/` directory
+   - Check that the filename matches exactly (case-sensitive)
+   - Verify the file extension is `.pdf`
+
+2. **"OPENROUTER_API_KEY not found"**
+   - Create a `.env` file in the project root
+   - Add `OPENROUTER_API_KEY=your_key_here`
+   - Ensure the key is valid and has sufficient credits
+
+3. **"Error converting PDF to image"**
+   - Check if the PDF is password-protected
+   - Verify the PDF is not corrupted
+   - Ensure PyMuPDF is installed correctly
+
+4. **"ChromaDB errors"**
+   - Delete and re-create `chroma_db/` directory if the index is corrupted
+   - Ensure write permissions in the project directory
+
+5. **Poor extraction results**
+   - Use higher quality PDFs with clear text/drawings
+   - Ensure drawings follow standard engineering notation
+   - Check that the NOTES section is clearly visible
+
+6. **Import errors**
+   - Ensure virtual environment is activated
+   - Run `pip install -r requirements.txt` again
+   - Check Python version (3.10+ required)
+
+### Getting Help
+
+1. Check the generated image files in `convertedimages/` to verify PDF conversion
+2. Review console output for specific error messages
+3. Verify all dependencies are installed: `pip list`
+4. Ensure API keys are valid and have sufficient credits
+5. Check `METHODOLOGY.md` for detailed technical information
+
+---
+
+## 🔧 Advanced Configuration
+
+### Environment Variables
+
+```bash
+# Required
+OPENROUTER_API_KEY=your_openrouter_api_key
+
+# Optional
+GEMINI_API_KEY=your_gemini_api_key  # For direct Gemini access
+```
+
+### Customizing Image Conversion
+
+In `pdf_to_image.py`, you can adjust:
+- **Page number**: Which page to convert (default: 1)
+- **Zoom factor**: Image quality (higher = better quality, larger file)
+- **Output format**: JPG, PNG, etc.
+
+### Customizing Prompts
+
+Edit `prompt.py` to customize extraction criteria:
+- `INITIAL_EXTRACTION_PROMPT`: Main extraction prompt
+- `prompt1`: Alternative detailed extraction prompt
+- `REFINEMENT_PROMPT_TEMPLATE`: Report refinement prompt
+
+### Vector Database Configuration
+
+The vector database uses:
+- **Embedding Model**: `all-MiniLM-L6-v2` (384 dimensions)
+- **Database**: ChromaDB with persistent storage
+- **Retrieval**: Top 5 most relevant provisions by cosine similarity
+
+---
+
+## 🧪 Development
+
+### Running Tests
+
+```bash
+# Test environment setup
+python test_env.py
+
+# Test PDF download/processing
+python test_pdf_download.py
+```
+
+### Jupyter Notebooks
+
+The project includes Jupyter notebooks for exploration:
+- `main.ipynb`: Main exploration notebook
+- `FINAL.ipynb`: Final analysis notebook
+
+To use Jupyter:
+```bash
+# Install Jupyter (if not already installed)
+pip install jupyter jupyterlab
+
+# Start Jupyter Lab
+jupyter lab
+```
+
+### Code Structure
+
+The codebase follows a modular architecture:
+- **Input Processing**: PDF conversion and image preprocessing
+- **Vision Analysis**: AI-powered drawing interpretation
+- **Data Extraction**: Structured information extraction
+- **RAG Enhancement**: Code provision retrieval and citation
+- **Report Generation**: Markdown report creation
+
+---
+
+## 📚 Documentation
+
+- **`README.md`**: This file - quick start and usage guide
+- **`METHODOLOGY.md`**: Comprehensive technical documentation including:
+  - System architecture
+  - RAG implementation details
+  - AI model specifications
+  - Workflow diagrams
+  - Compliance criteria details
 
 ---
 
 ## 🤝 Contributing
 
-1. Create a feature branch
-2. Make changes with clear commits
-3. Add/update docs where relevant
-4. Open a PR
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes with clear commits
+4. Add/update documentation where relevant
+5. Test thoroughly
+6. Submit a pull request
 
 ---
 
-Ready to automate your structural design compliance checks? Run `python WO-380/app.py <your-file.pdf>` and get your first report in minutes.
+## 📄 License
+
+[Add your license information here]
+
+---
+
+## 🙏 Acknowledgments
+
+- **Google Gemini Vision AI** for image analysis capabilities
+- **OpenRouter** for unified AI API access
+- **IS 456:2000** and **SP 34:1987** code provisions for compliance checking
+- **ChromaDB** and **sentence-transformers** for vector search capabilities
+- The civil engineering community for domain expertise
+
+---
+
+## 🔮 Future Enhancements
+
+- Support for additional Indian Standards (IS 1893, IS 13920)
+- Web interface using Streamlit
+- Batch processing for multiple drawings
+- Interactive report refinement
+- 3D drawing support
+- Handwritten text recognition
+- Multi-language support
+
+---
+
+**Ready to automate your structural design compliance checks?** 
+
+Run `python app.py <your-file.pdf>` and get your first report in minutes! 🚀

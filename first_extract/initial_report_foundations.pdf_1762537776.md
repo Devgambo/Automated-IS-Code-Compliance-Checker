@@ -1,1 +1,0 @@
-Error: Could not analyze the PDF. Completions.create() got an unexpected keyword argument 'dpi'
